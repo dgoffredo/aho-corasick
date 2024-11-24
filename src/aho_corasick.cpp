@@ -15,7 +15,7 @@ struct Node {
 
 struct DictEntry {
   std::string_view word;
-  DictEntry *next = nullptr;
+  DictEntry *suffix = nullptr;
 };
 
 struct DictEntryNode {
@@ -158,7 +158,7 @@ Searcher::Searcher(PrefixTrie&& dictionary)
     node->fail = candidate;
     // Update the chain of matching words, too, if applicable.
     if (node->word) {
-      node->word->next = candidate->word;
+      node->word->suffix = candidate->word;
     } else {
       node->word = candidate->word;
     }
@@ -168,7 +168,7 @@ Searcher::Searcher(PrefixTrie&& dictionary)
       queue.push(Visit{.node = kid, .parent = node, .edge = kid_edge});
     }
     queue.pop();
-  };
+  }
 }
 
 std::pair<Iterator, Iterator> Searcher::find_all(std::string_view text) const {
@@ -199,7 +199,7 @@ std::pair<Iterator, Iterator> Searcher::find_all(std::string_view text) const {
 
 Iterator& Iterator::operator++() {
   if (word) {
-    word = word->next;
+    word = word->suffix;
   }
 
   while (!word && next != end) {
