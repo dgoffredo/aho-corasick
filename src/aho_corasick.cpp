@@ -49,14 +49,14 @@ void PrefixTrie::insert(std::string_view word) {
   }
 
   Node *node = root;
-  for (auto p = word.begin(); p != word.end(); ++p) {
+  for (const char ch : word) {
     auto kid = std::find_if( node->kids.begin(), node->kids.end(),
-      [&](const auto& pair) { return pair.first == *p; });
+      [&](const auto& pair) { return pair.first == ch; });
     if (kid != node->kids.end()) {
       node = kid->second;
     } else {
       Node *const new_node = new Node;
-      node->kids.emplace_back(*p, new_node);
+      node->kids.emplace_back(ch, new_node);
       node = new_node;
     }
   }
@@ -84,12 +84,11 @@ Node *find_kid(const Node& node, char edge) {
 
 } // namespace
 
-Searcher::Searcher(PrefixTrie&& dictionary)
-: trie(std::move(dictionary)) {
+void Searcher::finish_trie() {
   // Set the `fail` pointers, the `DictEntry::next` pointers, and sort `kids`
   // by walking the trie breadth-first.
 
-  // `[parent] ----edge----> [node]` when we're visiting `node`.
+  // `parent ----edge----> node` when we're visiting `node`.
   struct Visit {
     Node *node;
     Node *parent;
@@ -154,6 +153,11 @@ Searcher::Searcher(PrefixTrie&& dictionary)
     }
     queue.pop();
   }
+}
+
+Searcher::Searcher(PrefixTrie&& dictionary)
+: trie(std::move(dictionary)) {
+  finish_trie();
 }
 
 std::pair<Iterator, Iterator> Searcher::find_all(std::string_view text) const {

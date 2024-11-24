@@ -60,10 +60,21 @@ const std::string_view *Iterator::operator->() const {
 
 class Searcher {
   PrefixTrie trie;
+  void finish_trie();
  public:
   explicit Searcher(PrefixTrie&&);
+  template <typename StringIter, typename StringEndIter>
+  Searcher(StringIter begin, StringEndIter end);
 
   std::pair<Iterator, Iterator> find_all(std::string_view) const;
 };
+
+template <typename StringIter, typename StringEndIter>
+Searcher::Searcher(StringIter begin, StringEndIter end) {
+  for (StringIter it = begin; it != end; ++it) {
+    trie.insert(*it);
+  }
+  finish_trie();
+}
 
 } // namespace AhoCorasick
