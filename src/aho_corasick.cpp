@@ -62,10 +62,9 @@ void PrefixTrie::insert(std::string_view word) {
 
   Node *node = root;
   for (auto p = word.begin(); p != word.end(); ++p) {
-    const auto begin = node->kids.begin(), end = node->kids.end();
-    const auto char_matches = [&](auto& pair) { return pair.first == *p; };
-    const auto kid = std::find_if(begin, end, char_matches);
-    if (kid != end) {
+    auto kid = std::find_if( node->kids.begin(), node->kids.end(),
+      [&](const auto& pair) { return pair.first == *p; });
+    if (kid != node->kids.end()) {
       node = kid->second;
     } else {
       Node *const new_node = new Node;
@@ -83,10 +82,27 @@ void PrefixTrie::insert(std::string_view word) {
   }
 }
 
+namespace {
+
+Node *find_kid(const Node& node, char edge) {
+  const auto by_edge = [](const auto& left, const auto& right) {
+    return left.first < right.first;
+  };
+  const auto& kids = node.kids;
+  const auto sentinel = std::make_pair(edge, nullptr);
+  auto found = std::lower_bound(kids.begin(), kids.end(), sentinel, by_edge);
+  if (found == node.kids.end() || found->first != edge) {
+    return nullptr;
+  }
+  return found->second;
+}
+
+} // namespace
+
 Searcher::Searcher(PrefixTrie&& dictionary)
 : trie(std::move(dictionary)) {
-  // Set the `fail` pointers and the `DictEntry::next` pointers by walking the
-  // trie breadth-first.
+  // Set the `fail` pointers, the `DictEntry::next` pointers, and sort `kids`
+  // by walking the trie breadth-first.
 
   // `[parent] ----edge----> [node]` when we're visiting `node`.
   struct Visit {
@@ -100,10 +116,19 @@ Searcher::Searcher(PrefixTrie&& dictionary)
     return;
   }
 
+  const auto sort_kids = [](Node& node) {
+    std::sort(node.kids.begin(), node.kids.end(), [](const auto& left, const auto& right) {
+        return left.first < right.first;
+    });
+  };
+
+  sort_kids(*trie.root);
+
   // Traversal begins with the grandchildren of the root. The children of the
   // root have the root as their `fail` node. 
   for (auto& [_, parent] : trie.root->kids) {
     parent->fail = trie.root;
+    sort_kids(*parent);
     for (const auto& [edge, kid] : parent->kids) {
       queue.push(Visit{.node = kid, .parent = parent, .edge = edge});
     }
@@ -111,13 +136,12 @@ Searcher::Searcher(PrefixTrie&& dictionary)
   
   while (!queue.empty()) {
     const auto& [node, parent, edge] = queue.front();
+    sort_kids(*node);
     Node *candidate = parent->fail;
     for (;;) {
-      const auto& kids = candidate->kids;
-      const auto has_edge = [&](const auto& pair) { return pair.first == edge; };
-      auto found = std::find_if(kids.begin(), kids.end(), has_edge);
-      if (found != kids.end()) {
-        candidate = found->second;
+      Node *kid = find_kid(*candidate, edge);
+      if (kid) {
+        candidate = kid;
         // `candidate` now points to the longest prefix in the trie that is
         // also a strict suffix of `node`.
         break;
@@ -183,10 +207,9 @@ Iterator& Iterator::operator++() {
     ++next;
     const Node *node = state;
     for (;;) {
-      const auto char_matches = [&](auto& pair) { return pair.first == ch; };
-      const auto found = std::find_if(node->kids.begin(), node->kids.end(), char_matches);
-      if (found != node->kids.end()) {
-        node = found->second;
+      const Node *kid = find_kid(*node, ch);
+      if (kid) {
+        node = kid;
         break;
       }
       if (!node->fail) {
