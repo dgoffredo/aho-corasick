@@ -31,6 +31,7 @@ aa: found at offset 3
 a: found at offset 4
 aa: found at offset 4
 a: found at offset 5
+aab: found at offset 4
 a: found at offset 7
 baa: found at offset 6
 aa: found at offset 7
@@ -39,4 +40,4 @@ baab: found at offset 6
 aab: found at offset 7
 ```
 
-The searcher examines each character exactly once.
+The searcher examines each character at most once.

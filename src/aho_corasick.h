@@ -5,10 +5,12 @@
 
 namespace AhoCorasick {
 
+struct DictEntryNode;
 struct Node;
 
 class PrefixTrie {
   Node *root;
+  DictEntryNode *words;
   friend class Searcher; 
  public:
   PrefixTrie();
@@ -22,20 +24,40 @@ class PrefixTrie {
 struct DictEntry;
 
 class Iterator {
+  std::string_view result;
   const Node *state;
-  const char *current;
-  const DictEntry *result;
+  const char *next;
+  const char *end;
+  const DictEntry *word;
   friend class Searcher;
  public:
-  bool operator==(const Iterator&) const = default;
+  bool operator==(const Iterator&) const;
+  bool operator!=(const Iterator&) const;
   Iterator& operator++();
   Iterator operator++(int);
-  // TODO: It would be nice for `operator*` and `operator->` to be inline,
-  // since they are trivial; but then I'd have to expose the structure of
-  // `DictEntry`. That wouldn't really be a problem, but I want to avoid it.
   const std::string_view& operator*() const;
   const std::string_view *operator->() const;
 };
+
+inline
+bool Iterator::operator==(const Iterator& other) const {
+  return word == other.word && next == other.next;
+}
+
+inline
+bool Iterator::operator!=(const Iterator& other) const {
+  return word != other.word || next != other.next;
+}
+
+inline
+const std::string_view& Iterator::operator*() const {
+  return result;
+}
+
+inline
+const std::string_view *Iterator::operator->() const {
+  return &result;
+}
 
 class Searcher {
   PrefixTrie trie;
