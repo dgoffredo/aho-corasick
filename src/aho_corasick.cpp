@@ -18,18 +18,12 @@ struct DictEntry {
   DictEntry *suffix = nullptr;
 };
 
-struct DictEntryNode {
-  DictEntry entry;
-  DictEntryNode *next;
-};
-
 PrefixTrie::PrefixTrie()
-: root(nullptr), words(nullptr) {}
+: root(nullptr) {}
 
 PrefixTrie::PrefixTrie(PrefixTrie&& other)
-: root(other.root), words(other.words) {
+: root(other.root), words(std::move(other.words)) {
   other.root = nullptr;
-  other.words = nullptr;
 }
 
 PrefixTrie::~PrefixTrie() {
@@ -44,12 +38,6 @@ PrefixTrie::~PrefixTrie() {
       stack.push_back(kid);
     }
     delete node;
-  }
-
-  for (DictEntryNode *word = words; word;) {
-    auto current = word;
-    word = word->next;
-    delete current;
   }
 }
 
@@ -74,11 +62,8 @@ void PrefixTrie::insert(std::string_view word) {
   }
 
   if (!node->word) {
-    words = new DictEntryNode{
-      .entry = DictEntry{.word = word},
-      .next = words
-    };
-    node->word = &words->entry; 
+    words.push_front(DictEntry{.word = word});
+    node->word = &words.front(); 
   }
 }
 

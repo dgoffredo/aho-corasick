@@ -1,16 +1,17 @@
 #pragma once
 
+#include <forward_list>
 #include <string_view>
 #include <utility>
 
 namespace AhoCorasick {
 
-struct DictEntryNode;
+struct DictEntry;
 struct Node;
 
 class PrefixTrie {
   Node *root;
-  DictEntryNode *words;
+  std::forward_list<DictEntry> words;
   friend class Searcher; 
  public:
   PrefixTrie();
@@ -20,8 +21,6 @@ class PrefixTrie {
 
   void insert(std::string_view word);
 };
-
-struct DictEntry;
 
 class Iterator {
   std::string_view result;
