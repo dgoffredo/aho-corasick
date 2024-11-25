@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <queue>
 #include <vector>
 
@@ -14,7 +15,7 @@ struct Node {
 };
 
 struct DictEntry {
-  std::string_view word;
+  std::size_t size;
   DictEntry *suffix = nullptr;
 };
 
@@ -62,7 +63,7 @@ void PrefixTrie::insert(std::string_view word) {
   }
 
   if (!node->word) {
-    words.push_front(DictEntry{.word = word});
+    words.push_front(DictEntry{.size = word.size()});
     node->word = &words.front(); 
   }
 }
@@ -213,8 +214,7 @@ Iterator& Iterator::operator++() {
   }
 
   if (word) {
-    const auto size = word->word.size();
-    result = std::string_view(next - size, size);
+    result = std::string_view(next - word->size, word->size);
   }
 
   return *this;
